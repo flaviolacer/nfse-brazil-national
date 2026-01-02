@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.00">
+  <infDPS Id="{{id}}">
+    <tpAmb>{{ambiente}}</tpAmb>
+    <dhEmi>{{dataEmissao}}</dhEmi>
+    <verAplic>{{versaoAplicacao}}</verAplic>
+    <serie>{{serie}}</serie>
+    <nDPS>{{numero}}</nDPS>
+    <dCompet>{{competencia}}</dCompet>
+    <tpEmit>{{tipoEmitente}}</tpEmit>
+    <cLocEmi>{{municipioEmissao}}</cLocEmi>
+    <prest>
+      {{#if prestador.cnpj}}<CNPJ>{{prestador.cnpj}}</CNPJ>{{/if}}
+      {{#if prestador.cpf}}<CPF>{{prestador.cpf}}</CPF>{{/if}}
+      {{#if prestador.telefone}}<fone>{{prestador.telefone}}</fone>{{/if}}
+      <regTrib>
+        <opSimpNac>{{prestador.optanteSimplesNacional}}</opSimpNac>
+        {{#if prestador.regimeApuracaoTributacaoSN}}<regApTribSN>{{prestador.regimeApuracaoTributacaoSN}}</regApTribSN>{{/if}}
+        <regEspTrib>{{prestador.regimeEspecialTributacao}}</regEspTrib>
+      </regTrib>
+    </prest>
+    <toma>
+      {{#if tomador.cnpj}}<CNPJ>{{tomador.cnpj}}</CNPJ>{{/if}}
+      {{#if tomador.cpf}}<CPF>{{tomador.cpf}}</CPF>{{/if}}
+      {{#if tomador.inscricaoMunicipal}}<IM>{{tomador.inscricaoMunicipal}}</IM>{{/if}}
+      {{#if tomador.nome}}<xNome>{{tomador.nome}}</xNome>{{/if}}
+      {{#if tomador.endereco}}
+      <end>
+        {{#if tomador.endereco.cep}}
+        <endNac>
+          <cMun>{{tomador.endereco.codigoMunicipio}}</cMun>
+          <CEP>{{tomador.endereco.cep}}</CEP>
+        </endNac>
+        {{/if}}
+        <xLgr>{{tomador.endereco.logradouro}}</xLgr>
+        <nro>{{tomador.endereco.numero}}</nro>
+        {{#if tomador.endereco.complemento}}<xCpl>{{tomador.endereco.complemento}}</xCpl>{{/if}}
+        <xBairro>{{tomador.endereco.bairro}}</xBairro>
+      </end>
+      {{/if}}
+      {{#if tomador.telefone}}<fone>{{tomador.telefone}}</fone>{{/if}}
+      {{#if tomador.email}}<email>{{tomador.email}}</email>{{/if}}
+    </toma>
+    <serv>
+      <locPrest>
+        <cLocPrestacao>{{servico.municipioPrestacao}}</cLocPrestacao>
+        {{#if servico.paisPrestacao}}<cPaisPrestacao>{{servico.paisPrestacao}}</cPaisPrestacao>{{/if}}
+      </locPrest>
+      <cServ>
+        <cTribNac>{{servico.codigoTributacaoNacional}}</cTribNac>
+        <cTribMun>{{servico.codigoTributacaoMunicipal}}</cTribMun>
+        <xDescServ>{{servico.descricao}}</xDescServ>
+        {{#if servico.codigoNbs}}<cNBS>{{servico.codigoNbs}}</cNBS>{{/if}}
+        {{#if servico.codigoInterno}}<cIntContrib>{{servico.codigoInterno}}</cIntContrib>{{/if}}
+      </cServ>
+    </serv>
+    <valores>
+      <vServPrest>
+        <vServ>{{valores.valorServicos}}</vServ>
+      </vServPrest>
+      <trib>
+        <tribMun>
+          <tribISSQN>{{valores.tributacaoIssqn}}</tribISSQN>
+          <tpRetISSQN>{{valores.tipoRetencaoIssqn}}</tpRetISSQN>
+          {{#if valores.aliquotaIssqn}}<pAliq>{{valores.aliquotaIssqn}}</pAliq>{{/if}}
+          {{#if valores.valorIssqn}}<vISSQN>{{valores.valorIssqn}}</vISSQN>{{/if}}
+        </tribMun>
+        <totTrib>
+          {{#if valores.tributosDetalhado}}
+          <pTotTrib>
+            <pTotTribFed>{{valores.tributosDetalhado.federal}}</pTotTribFed>
+            <pTotTribEst>{{valores.tributosDetalhado.estadual}}</pTotTribEst>
+            <pTotTribMun>{{valores.tributosDetalhado.municipal}}</pTotTribMun>
+          </pTotTrib>
+          {{else}}
+          {{#if valores.percentualTotalTributosSN}}
+          <pTotTribSN>{{valores.percentualTotalTributosSN}}</pTotTribSN>
+          {{else}}
+          <indTotTrib>0</indTotTrib>
+          {{/if}}
+          {{/if}}
+        </totTrib>
+      </trib>
+    </valores>
+  </infDPS>
+</DPS>
