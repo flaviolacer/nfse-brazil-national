@@ -12,16 +12,12 @@
     "type": "git",
     "url": "git+https://github.com/flaviolacer/nfse-brazil-national.git"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
   "author": "Flavio Lacerda",
   "homepage": "https://github.com/flaviolacer/nfse-brazil-national",
   "scripts": {
     "test": "node --test"
   },
-  "private": true,
+  "public": true,
   "dependencies": {
     "axios": "^1.13.2",
     "handlebars": "^4.7.8",
