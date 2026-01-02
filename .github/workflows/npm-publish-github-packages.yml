@@ -25,17 +25,19 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: write
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           registry-url: https://npm.pkg.github.com/
           scope: '@flaviolacer'
       - run: npm ci
-      # Renomeia o pacote temporariamente para atender ao requisito do GitHub Packages
       - run: npm pkg set name=@flaviolacer/nfse-brazil-national
       - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-npm:
     needs: build
