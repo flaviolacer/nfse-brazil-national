@@ -29,7 +29,7 @@ async function main() {
     //const baseURL = "https://sefin.nfse.gov.br/SefinNacional";
 
     try {
-        console.log(`Usando certificado: ${CERTIFICATE_PATH}`);
+        console.log(`Using certificate: ${CERTIFICATE_PATH}`);
 
         const client = new NfseNationalClient({
             baseURL: baseURL,
@@ -117,25 +117,25 @@ async function main() {
             }
         };
         
-        console.log("Gerando XML...");
+        console.log("Generating XML...");
         const xmlAssinado = await client.generateDpsXml(dadosDps);
 
-        console.log("Validando XML contra XSD...");
+        console.log("Validating XML against XSD...");
         await client.validateDpsXml(xmlAssinado);
-        console.log("XML Válido!");
+        console.log("XML Valid!");
 
-        console.log(`Enviando DPS (ID: ${dadosDps.id})...`);
+        console.log(`Sending DPS (ID: ${dadosDps.id})...`);
         
         let resultado;
         resultado = await client.issueNfse(xmlAssinado);
         
         if (resultado) {
-            console.log("Sucesso! Resposta da API:");
+            console.log("Success! API Response:");
             console.log(JSON.stringify(resultado, null, 2));
         }
 
         if (resultado && resultado.chaveAcesso) {
-            console.log(`\nTentando cancelar a NFS-e: ${resultado.chaveAcesso}`);
+            console.log(`\nAttempting to cancel NFS-e: ${resultado.chaveAcesso}`);
             
             const cancelamentoData = {
                 id: NfseNationalClient.generateEventId(resultado.chaveAcesso, "101101"),
@@ -146,36 +146,36 @@ async function main() {
                 chaveAcesso: resultado.chaveAcesso,
                 numeroPedido: "001",
                 codigoMotivo: "1", // 1-Erro na Emissão
-                descricaoMotivo: "Teste de cancelamento via API"
+                descricaoMotivo: "Cancellation test via API"
             };
 
-            console.log("Gerando XML de Cancelamento...");
+            console.log("Generating Cancellation XML...");
             const xmlCancelamento = await client.generateCancellationXml(cancelamentoData);
 
-            console.log("Validando XML de Cancelamento...");
+            console.log("Validating Cancellation XML...");
             await client.validateEventXml(xmlCancelamento);
-            console.log("XML de Cancelamento Válido!");
+            console.log("Cancellation XML Valid!");
 
             const resultadoCancelamento = await client.cancelNfse(xmlCancelamento, resultado.chaveAcesso);
-            console.log("Cancelamento realizado com sucesso!");
+            console.log("Cancellation successful!");
             console.log(JSON.stringify(resultadoCancelamento, null, 2));
         }
 
     } catch (error) {
-        console.error("Erro na execução:");
+        console.error("Execution error:");
         if (error.status) {
-            console.error(`Status HTTP: ${error.status}`);
-            console.error("Detalhes:", JSON.stringify(error.data, null, 2));
+            console.error(`HTTP Status: ${error.status}`);
+            console.error("Details:", JSON.stringify(error.data, null, 2));
         } else {
-            console.error("Mensagem:", error.message);
+            console.error("Message:", error.message);
             if (error.cause) {
-                console.error("Causa:", error.cause);
+                console.error("Cause:", error.cause);
             }
             if (error.code) {
-                console.error("Código de Erro:", error.code);
+                console.error("Error Code:", error.code);
             }
             if (error.originalError && error.originalError.response) {
-                 console.error("Dados da Resposta:", error.originalError.response.data);
+                 console.error("Response Data:", error.originalError.response.data);
             }
         }
     }

@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 export class NfseNationalClient {
     constructor({ baseURL, certificate, password, axiosConfig } = {}) {
         if (!baseURL) {
-            throw new Error("baseURL é obrigatório");
+            throw new Error("baseURL is required");
         }
 
         this.baseURL = baseURL;
@@ -34,55 +34,55 @@ export class NfseNationalClient {
         this.pemCert = null;
     }
 
-    async generateDpsXml(dpsData) {
-        return this.#generateXml("dps.xml", dpsData, "//*[local-name(.)='infDPS']", dpsData.id);
+    async generateDpsXml(dpsData, options = {}) {
+        return this.#generateXml("dps.xml", dpsData, "//*[local-name(.)='infDPS']", dpsData.id, options);
     }
 
-    async validateDpsXml(xmlString, xsdFilename = "DPS_v1.00.xsd") {
-        return this.#validateXml(xmlString, xsdFilename, "dps");
+    async validateDpsXml(xmlString, xsdFilename = "DPS_v1.00.xsd", suppressErrors = false) {
+        return this.#validateXml(xmlString, xsdFilename, "dps", suppressErrors);
     }
 
-    async validateEventXml(xmlString, xsdFilename = "pedRegEvento_v1.00.xsd") {
-        return this.#validateXml(xmlString, xsdFilename, "evento");
+    async validateEventXml(xmlString, xsdFilename = "pedRegEvento_v1.00.xsd", suppressErrors = false) {
+        return this.#validateXml(xmlString, xsdFilename, "evento", suppressErrors);
     }
 
     async issueNfse(dpsData) {
         const xmlPayload = typeof dpsData === "object" ? await this.generateDpsXml(dpsData) : dpsData;
-        return this.#sendCompressedXml("nfse", xmlPayload, "dpsXmlGZipB64", "Falha ao emitir NFS-e");
+        return this.#sendCompressedXml("nfse", xmlPayload, "dpsXmlGZipB64", "Failed to issue NFS-e");
     }
 
     async getNfse(chaveAcesso) {
         await this.#ensureInitialized();
         if (!chaveAcesso) {
-            throw new Error("chaveAcesso é obrigatório");
+            throw new Error("chaveAcesso is required");
         }
         try {
             const url = `nfse/${encodeURIComponent(chaveAcesso)}`;
             const response = await this.http.get(url);
             return response.data;
         } catch (err) {
-            throw this.#toNfseError(err, "Falha ao consultar NFS-e");
+            throw this.#toNfseError(err, "Failed to query NFS-e");
         }
     }
 
     async getDps(idDps) {
         await this.#ensureInitialized();
         if (!idDps) {
-            throw new Error("idDps é obrigatório");
+            throw new Error("idDps is required");
         }
         try {
             const url = `dps/${encodeURIComponent(idDps)}`;
             const response = await this.http.get(url);
             return response.data;
         } catch (err) {
-            throw this.#toNfseError(err, "Falha ao consultar DPS");
+            throw this.#toNfseError(err, "Failed to query DPS");
         }
     }
 
     async checkDps(idDps) {
         await this.#ensureInitialized();
         if (!idDps) {
-            throw new Error("idDps é obrigatório");
+            throw new Error("idDps is required");
         }
         try {
             const url = `dps/${encodeURIComponent(idDps)}`;
@@ -92,12 +92,12 @@ export class NfseNationalClient {
                 headers: response.headers,
             };
         } catch (err) {
-            throw this.#toNfseError(err, "Falha ao verificar DPS");
+            throw this.#toNfseError(err, "Failed to check DPS");
         }
     }
 
-    async generateCancellationXml(cancelamentoData) {
-        return this.#generateXml("dps_cancelamento.xml", cancelamentoData, "//*[local-name(.)='infPedReg']", cancelamentoData.id);
+    async generateCancellationXml(cancelamentoData, options = {}) {
+        return this.#generateXml("dps_cancelamento.xml", cancelamentoData, "//*[local-name(.)='infPedReg']", cancelamentoData.id, options);
     }
 
     async cancelNfse(cancelamentoData, chaveAcesso) {
@@ -108,15 +108,15 @@ export class NfseNationalClient {
             xmlPayload = cancelamentoData;
             chave = chaveAcesso;
         } else {
-            if (!cancelamentoData.chaveAcesso) throw new Error("chaveAcesso é obrigatório para cancelamento");
+            if (!cancelamentoData.chaveAcesso) throw new Error("chaveAcesso is required for cancellation");
             chave = cancelamentoData.chaveAcesso;
             xmlPayload = await this.generateCancellationXml(cancelamentoData);
         }
 
-        if (!chave) throw new Error("chaveAcesso é obrigatório para cancelamento");
+        if (!chave) throw new Error("chaveAcesso is required for cancellation");
 
         const url = `nfse/${encodeURIComponent(chave)}/eventos`;
-        return this.#sendCompressedXml(url, xmlPayload, "pedidoRegistroEventoXmlGZipB64", "Falha ao cancelar NFS-e");
+        return this.#sendCompressedXml(url, xmlPayload, "pedidoRegistroEventoXmlGZipB64", "Failed to cancel NFS-e");
     }
 
     // --- Static Helper Methods ---
@@ -210,7 +210,7 @@ export class NfseNationalClient {
                     this.certData = await fs.readFile(this.certificateSource);
                 } catch (err) {
                     if (err.code === 'ENOENT') {
-                        throw new Error(`Certificado não encontrado no caminho: ${this.certificateSource}`);
+                        throw new Error(`Certificate not found at path: ${this.certificateSource}`);
                     }
                     throw err;
                 }
@@ -252,14 +252,14 @@ export class NfseNationalClient {
                 this.pemCert = forge.pki.certificateToPem(certBag.cert);
             }
         } catch (err) {
-            console.warn("Falha ao processar certificado (PFX/PEM):", err.message);
+            console.warn("Failed to process certificate (PFX/PEM):", err.message);
         }
     }
 
-    async #generateXml(templateName, data, signReference, signId) {
+    async #generateXml(templateName, data, signReference, signId, options = {}) {
         await this.#ensureInitialized();
         
-        if (!data) throw new Error("Dados para geração do XML são obrigatórios");
+        if (!data) throw new Error("Data for XML generation is required");
 
         try {
             const templatePath = path.join(__dirname, "templates", templateName);
@@ -270,15 +270,17 @@ export class NfseNationalClient {
             if (this.pemKey && this.pemCert) {
                 return this.#signXml(xmlRaw, signReference, signId);
             } else {
-                console.warn("Aviso: XML não assinado (certificado não disponível).");
+                if (!options.suppressSigningWarning) {
+                    console.warn("Warning: XML not signed (certificate not available).");
+                }
                 return xmlRaw;
             }
         } catch (err) {
-            throw new Error(`Falha ao processar/assinar template: ${err.message}`);
+            throw new Error(`Failed to process/sign template: ${err.message}`);
         }
     }
 
-    async #validateXml(xmlString, xsdFilename, tempPrefix) {
+    async #validateXml(xmlString, xsdFilename, tempPrefix, suppressErrors = false) {
         const xsdPath = path.join(__dirname, "templates", "xsd", xsdFilename);
         const tempXmlPath = path.join(tmpdir(), `${tempPrefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.xml`);
 
@@ -291,8 +293,9 @@ export class NfseNationalClient {
             await execAsync(cmd);
             return true;
         } catch (error) {
+            if (suppressErrors) return false;
             const validationErrors = error.stderr || error.message;
-            throw new Error(`Erros de validação XSD (${xsdFilename}):\n${validationErrors}`);
+            throw new Error(`XSD validation errors (${xsdFilename}):\n${validationErrors}`);
         } finally {
             try {
                 await fs.unlink(tempXmlPath);
