@@ -18,7 +18,7 @@ jobs:
       - run: npm ci
       - run: npm test
 
-  publish-gpr:
+  publish-github-packages:
     needs: build
     runs-on: ubuntu-latest
     environment: production

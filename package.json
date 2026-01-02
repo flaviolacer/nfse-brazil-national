@@ -1,6 +1,6 @@
 {
   "name": "nfse-brazil-national",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Biblioteca cliente para integração com a API Nacional da NFS-e (Nota Fiscal de Serviço Eletrônica) do Brasil.",
   "type": "module",
   "main": "./src/index.js",
