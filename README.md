@@ -1,5 +1,7 @@
 # nfse-brazil-national
 
+[![NPM version](https://img.shields.io/npm/v/nfse-brazil-national)](https://www.npmjs.com/package/nfse-brazil-national)
+
 Biblioteca cliente para integração com a API Nacional da NFS-e (Nota Fiscal de Serviço Eletrônica) do Brasil.
 
 Esta biblioteca facilita a geração, assinatura, validação e transmissão de documentos XML (DPS e Eventos) para o ambiente nacional da NFS-e.
