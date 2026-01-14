@@ -12,12 +12,19 @@ Esta biblioteca facilita a geração, assinatura, validação e transmissão de 
 *   **Assinatura Digital**: Assinatura XMLDSIG (padrão ICP-Brasil) utilizando certificados A1 (PFX/PKCS#12 ou PEM).
 *   **Validação XSD**: Validação local dos XMLs gerados contra os schemas oficiais antes do envio.
 *   **Comunicação API**: Métodos para emissão síncrona, consulta e cancelamento.
+*   **Geração de PDF (DANFSe)**: Geração do Documento Auxiliar da NFS-e em PDF a partir do XML.
 *   **Helpers**: Utilitários para geração de IDs (DPS/Eventos) e formatação de datas no padrão exigido.
 
 ## Instalação
 
 ```bash
 npm install nfse-brazil-national
+```
+
+Para melhor qualidade do QR Code na geração de PDF, recomenda-se instalar também a biblioteca `qrcode`:
+
+```bash
+npm install qrcode
 ```
 
 ## Uso
@@ -73,6 +80,22 @@ try {
 }
 ```
 
+### Geração de PDF (DANFSe)
+
+Você pode gerar o PDF da NFS-e a partir do XML da nota.
+
+```javascript
+// Gerar PDF (Buffer)
+const pdfBuffer = await client.generateNfsePdf(xmlString, {
+    logo: "data:image/png;base64,..." // Opcional: Logo em Base64
+});
+
+// Gerar PDF comprimido (GZIP Base64)
+const pdfGzipBase64 = await client.generateNfsePdf(xmlString, {
+    gZipB64: true
+});
+```
+
 ### Cancelamento de NFS-e
 
 ```javascript
@@ -103,3 +126,4 @@ const resultado = await client.cancelNfse(dadosCancelamento, chaveAcesso);
 *   `getDps(idDps)`: Consulta status de um DPS.
 *   `generateDpsXml(dpsData)`: Apenas gera o XML assinado (sem enviar).
 *   `validateDpsXml(xmlString)`: Valida XML contra o XSD.
+*   `generateNfsePdf(xmlString, options)`: Gera o PDF da NFS-e. Opções: `logo` (Base64), `gZipB64` (boolean).

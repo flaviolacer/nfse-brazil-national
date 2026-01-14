@@ -11,6 +11,9 @@ import {promisify} from "util";
 import {tmpdir} from "os";
 import forge from "node-forge";
 import {NfseNationalError} from "./errors.js";
+import {DOMParser} from "@xmldom/xmldom";
+import PdfPrinter from "pdfmake";
+import {createNfseDefinition} from "./templates/nfse-template.js";
 
 const execAsync = promisify(exec);
 const gzipAsync = promisify(zlib.gzip);
@@ -117,6 +120,135 @@ export class NfseNationalClient {
 
         const url = `nfse/${encodeURIComponent(chave)}/eventos`;
         return this.#sendCompressedXml(url, xmlPayload, "pedidoRegistroEventoXmlGZipB64", "Failed to cancel NFS-e");
+    }
+
+    async generateNfsePdf(xmlString, options = {}) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+        const getText = (parent, tag) => {
+            if (!parent) return "";
+            const el = parent.getElementsByTagName(tag)[0];
+            return el ? el.textContent : "";
+        };
+
+        const infNFSe = xmlDoc.getElementsByTagName("infNFSe")[0];
+        const emit = infNFSe ? infNFSe.getElementsByTagName("emit")[0] : null;
+        const dps = xmlDoc.getElementsByTagName("DPS")[0];
+        const infDPS = dps ? dps.getElementsByTagName("infDPS")[0] : null;
+        
+        const toma = infDPS ? infDPS.getElementsByTagName("toma")[0] : null;
+        const serv = infDPS ? infDPS.getElementsByTagName("serv")[0] : null;
+        const cServ = serv ? serv.getElementsByTagName("cServ")[0] : null;
+        
+        const valoresDPS = infDPS ? infDPS.getElementsByTagName("valores")[0] : null;
+        const trib = valoresDPS ? valoresDPS.getElementsByTagName("trib")[0] : null;
+        const tribMun = trib ? trib.getElementsByTagName("tribMun")[0] : null;
+        const totTrib = trib ? trib.getElementsByTagName("totTrib")[0] : null;
+        const pTotTrib = totTrib ? totTrib.getElementsByTagName("pTotTrib")[0] : null;
+
+        const enderNacEmit = emit ? emit.getElementsByTagName("enderNac")[0] : null;
+        const enderNacToma = toma ? toma.getElementsByTagName("enderNac")[0] : null;
+
+        const data = {
+            logo: options.logo,
+            nNFSe: getText(infNFSe, "nNFSe"),
+            dhProc: getText(infNFSe, "dhProc"),
+            chaveAcesso: infNFSe ? infNFSe.getAttribute("Id") : "",
+            competencia: getText(infDPS, "dCompet"),
+            numDps: getText(infDPS, "nDPS"),
+            serie: getText(infDPS, "serie"),
+            dpsEmissao: getText(infDPS, "dhEmi"),
+            locPrestacao: getText(infNFSe, "xLocPrestacao"),
+            emit: {
+                xNome: getText(emit, "xNome"),
+                CNPJ: getText(emit, "CNPJ"),
+                IM: getText(emit, "IM"),
+                fone: getText(emit, "fone"),
+                enderNac: {
+                    xLgr: getText(enderNacEmit, "xLgr"),
+                    nro: getText(enderNacEmit, "nro"),
+                    xBairro: getText(enderNacEmit, "xBairro"),
+                    xMun: getText(enderNacEmit, "cMun"),
+                    UF: getText(enderNacEmit, "UF"),
+                    CEP: getText(enderNacEmit, "CEP")
+                }
+            },
+            toma: {
+                xNome: getText(toma, "xNome"),
+                cpfCnpj: getText(toma, "CNPJ") || getText(toma, "CPF"),
+                IM: getText(toma, "IM"),
+                fone: getText(toma, "fone"),
+                ender: enderNacToma ? `${getText(enderNacToma, "xLgr")}, ${getText(enderNacToma, "nro")} - ${getText(enderNacToma, "xBairro")}` : "",
+                municipio: enderNacToma ? `${getText(enderNacToma, "cMun")} - ${getText(enderNacToma, "UF")}` : ""
+            },
+            serv: {
+                xDescServ: getText(cServ, "xDescServ"),
+                cNBS: getText(cServ, "cNBS"),
+                xTribNac: getText(infNFSe, "xTribNac"),
+                xTribMun: getText(infNFSe, "xTribMun"),
+                cTribNac: getText(cServ, "cTribNac"),
+                cTribMun: getText(cServ, "cTribMun")
+            },
+            iss: {
+                tributacao: getText(tribMun, "tribISSQN"),
+                munIncidencia: getText(infNFSe, "xLocIncid") || getText(infNFSe, "cLocIncid"),
+                retencao: getText(tribMun, "tpRetISSQN")
+            },
+            valores: {
+                vServ: getText(valoresDPS ? valoresDPS.getElementsByTagName("vServPrest")[0] : null, "vServ"),
+                vBC: getText(tribMun, "vBC"),
+                aliq: getText(tribMun, "aliq"),
+                vISS: getText(tribMun, "vISSQN"),
+                vLiq: getText(infNFSe ? infNFSe.getElementsByTagName("valores")[0] : null, "vLiq")
+            },
+            totaisTributos: {
+                federais: getText(pTotTrib, "pTotTribFed"),
+                estaduais: getText(pTotTrib, "pTotTribEst"),
+                municipais: getText(pTotTrib, "pTotTribMun")
+            }
+        };
+
+        // Tenta gerar QR Code como imagem se a lib 'qrcode' estiver disponível
+        try {
+            const QRCode = await import("qrcode");
+            if (data.chaveAcesso) {
+                data.qrCodeImage = await QRCode.default.toDataURL(data.chaveAcesso, {
+                    errorCorrectionLevel: 'M',
+                    margin: 0,
+                    width: 200 // Resolução da imagem gerada
+                });
+            }
+        } catch (e) {
+        }
+
+        const fonts = {
+            Roboto: {
+                normal: 'Helvetica',
+                bold: 'Helvetica-Bold',
+                italics: 'Helvetica-Oblique',
+                bolditalics: 'Helvetica-BoldOblique'
+            }
+        };
+
+        const printer = new PdfPrinter(fonts);
+        const docDefinition = createNfseDefinition(data);
+
+        const pdfBuffer = await new Promise((resolve, reject) => {
+            const pdfDoc = printer.createPdfKitDocument(docDefinition);
+            const chunks = [];
+            pdfDoc.on('data', (chunk) => chunks.push(chunk));
+            pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+            pdfDoc.on('error', (err) => reject(err));
+            pdfDoc.end();
+        });
+
+        if (options.gZipB64) {
+            const compressedBuffer = await gzipAsync(pdfBuffer);
+            return compressedBuffer.toString('base64');
+        }
+
+        return pdfBuffer;
     }
 
     // --- Static Helper Methods ---
