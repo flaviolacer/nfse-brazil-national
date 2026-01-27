@@ -216,7 +216,7 @@ export class NfseNationalClient {
                 data.qrCodeImage = await QRCode.default.toDataURL(data.chaveAcesso, {
                     errorCorrectionLevel: 'M',
                     margin: 0,
-                    width: 200 // Resolução da imagem gerada
+                    width: options.qrCodeWidth || 120
                 });
             }
         } catch (e) {

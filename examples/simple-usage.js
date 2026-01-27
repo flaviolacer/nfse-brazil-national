@@ -113,7 +113,17 @@ async function main() {
                     federal: "0.00",
                     estadual: "0.00",
                     municipal: "0.00"
-                }
+                },
+                // Exemplo de uso dos novos campos (opcional)
+                // descontos: {
+                //     incondicionado: "0.00",
+                //     condicionado: "0.00"
+                // },
+                // deducaoReducao: {
+                //     // Escolha um: percentual ou valor
+                //     // percentual: "0.00", 
+                //     // valor: "0.00"
+                // }
             }
         };
         

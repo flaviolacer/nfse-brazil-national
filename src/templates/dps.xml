@@ -58,6 +58,18 @@
       <vServPrest>
         <vServ>{{valores.valorServicos}}</vServ>
       </vServPrest>
+      {{#if valores.descontos}}
+      <vDescCondIncond>
+        {{#if valores.descontos.incondicionado}}<vDescIncond>{{valores.descontos.incondicionado}}</vDescIncond>{{/if}}
+        {{#if valores.descontos.condicionado}}<vDescCond>{{valores.descontos.condicionado}}</vDescCond>{{/if}}
+      </vDescCondIncond>
+      {{/if}}
+      {{#if valores.deducaoReducao}}
+      <vDedRed>
+        {{#if valores.deducaoReducao.percentual}}<pDR>{{valores.deducaoReducao.percentual}}</pDR>{{/if}}
+        {{#if valores.deducaoReducao.valor}}<vDR>{{valores.deducaoReducao.valor}}</vDR>{{/if}}
+      </vDedRed>
+      {{/if}}
       <trib>
         <tribMun>
           <tribISSQN>{{valores.tributacaoIssqn}}</tribISSQN>

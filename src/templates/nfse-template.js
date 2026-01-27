@@ -28,7 +28,8 @@ export const createNfseDefinition = (data) => {
     width: '*',
     stack: [
       { text: 'Documento Auxiliar da NFS-e', style: 'title' },
-      { text: 'NFS-e SEM VALIDADE JURÍDICA', style: 'pill' },
+      //{ text: 'NFS-e SEM VALIDADE JURÍDICA', style: 'pill' },
+      { text: ' ', style: 'pill' },
       { text: v(data.municipio, 'Município do Rio de Janeiro'), style: 'smallMuted' },
       { text: v(data.orgao, 'SMF / Receita Rio'), style: 'smallMuted' }
     ]
