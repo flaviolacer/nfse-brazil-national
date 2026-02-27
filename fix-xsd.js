@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const targetFile = path.join(__dirname, 'src', 'templates', 'xsd', 'tiposSimples_v1.00.xsd');
+const targetFile = path.join(__dirname, 'src', 'templates', 'xsd', '1.01', 'tiposSimples_v1.01.xsd');
 
 async function main() {
     try {
@@ -33,17 +33,6 @@ async function main() {
              console.log('✅ Âncoras ^ e $ removidas (incompatíveis com XSD 1.0/libxml2).');
              modified = true;
         }
-
-        // 2. Atualizar versão do Schema para 1.01
-        /*const oldVersionStr = 'value="1\\.00"';
-        const newVersionStr = 'value="1\\.01"';
-
-        if (data.includes(oldVersionStr)) {
-            data = data.replaceAll(oldVersionStr, newVersionStr);
-            console.log('✅ Versão do Schema atualizada para 1.01.');
-            modified = true;
-        }*/
-
 
         if (modified) {
             await fs.writeFile(targetFile, data, 'utf8');

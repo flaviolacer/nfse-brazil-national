@@ -21,7 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class NfseNationalClient {
-    constructor({ baseURL, certificate, password, axiosConfig } = {}) {
+    constructor({ baseURL, certificate, password, axiosConfig, xsdVersion } = {}) {
         if (!baseURL) {
             throw new Error("baseURL is required");
         }
@@ -30,6 +30,8 @@ export class NfseNationalClient {
         this.certificateSource = certificate;
         this.password = password;
         this.axiosConfig = axiosConfig || {};
+
+        this.xsdVersion = xsdVersion || "1.01";
 
         this.http = null;
         this.certData = null;
@@ -41,11 +43,13 @@ export class NfseNationalClient {
         return this.#generateXml("dps.xml", dpsData, "//*[local-name(.)='infDPS']", dpsData.id, options);
     }
 
-    async validateDpsXml(xmlString, xsdFilename = "DPS_v1.00.xsd", suppressErrors = false) {
+    async validateDpsXml(xmlString, suppressErrors = false) {
+        const xsdFilename = `DPS_v${this.xsdVersion}.xsd`;
         return this.#validateXml(xmlString, xsdFilename, "dps", suppressErrors);
     }
 
-    async validateEventXml(xmlString, xsdFilename = "pedRegEvento_v1.00.xsd", suppressErrors = false) {
+    async validateEventXml(xmlString, suppressErrors = false) {
+        const xsdFilename = `pedRegEvento_v${this.xsdVersion}.xsd`;
         return this.#validateXml(xmlString, xsdFilename, "evento", suppressErrors);
     }
 
@@ -413,7 +417,7 @@ export class NfseNationalClient {
     }
 
     async #validateXml(xmlString, xsdFilename, tempPrefix, suppressErrors = false) {
-        const xsdPath = path.join(__dirname, "templates", "xsd", xsdFilename);
+        const xsdPath = path.join(__dirname, "templates", "xsd", this.xsdVersion, xsdFilename);
         const tempXmlPath = path.join(tmpdir(), `${tempPrefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.xml`);
 
         try {
