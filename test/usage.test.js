@@ -109,7 +109,7 @@ describe("NfseNationalClient Usage", () => {
             assert.ok(!xml.includes('Signature'), "XML must not be signed (no certificate)");
 
             // Attempt to validate the generated XML (suppressing errors as it might fail due to missing signature)
-            await client.validateDpsXml(xml, undefined, true);
+            await client.validateDpsXml(xml, true);
         } catch (err) {
             // Ignore error if template is not found (in case test runs in environment without src/templates)
             if (err.message.includes("ENOENT")) {
@@ -142,7 +142,7 @@ describe("NfseNationalClient Usage", () => {
             assert.ok(!xml.includes('Signature'), "XML must not be signed");
 
             // Attempt to validate the generated XML (suppressing errors)
-            await client.validateEventXml(xml, undefined, true);
+            await client.validateEventXml(xml, true);
         } catch (err) {
             if (err.message.includes("ENOENT")) {
                 console.warn("Skipping template test: dps_cancelamento.xml not found");
