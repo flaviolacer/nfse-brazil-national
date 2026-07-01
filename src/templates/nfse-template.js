@@ -20,6 +20,15 @@ export const createNfseDefinition = (data) => {
     return doc;
   };
 
+  const formatDateTime = (value) => {
+    if (!value) return '-';
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (match) return `${match[3]}/${match[2]}/${match[1]} - ${match[4]}:${match[5]}`;
+    const dateOnly = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+    return value;
+  };
+
   const chave = v(data.chaveAcesso);
 
   const headerColumns = [];
@@ -89,12 +98,12 @@ export const createNfseDefinition = (data) => {
             [
               { stack: [{ text: 'Número da NFS-e', style: 'label' }, { text: v(data.nNFSe), style: 'value' }] },
               { stack: [{ text: 'Competência da NFS-e', style: 'label' }, { text: v(data.competencia || data.dCompet), style: 'value' }] },
-              { stack: [{ text: 'Data e Hora da emissão da NFS-e', style: 'label' }, { text: v(data.dhProc), style: 'value' }] }
+              { stack: [{ text: 'Data e Hora da emissão da NFS-e', style: 'label' }, { text: formatDateTime(v(data.dhProc)), style: 'value' }] }
             ],
             [
               { stack: [{ text: 'Número da DPS', style: 'label' }, { text: v(data.numDps || data.dpsNumero), style: 'value' }] },
               { stack: [{ text: 'Série da DPS', style: 'label' }, { text: v(data.serie || data.serieDps), style: 'value' }] },
-              { stack: [{ text: 'Data e Hora da emissão da DPS', style: 'label' }, { text: v(data.dpsEmissao || data.dhProc), style: 'value' }] }
+              { stack: [{ text: 'Data e Hora da emissão da DPS', style: 'label' }, { text: formatDateTime(v(data.dpsEmissao || data.dhProc)), style: 'value' }] }
             ]
           ]
         },

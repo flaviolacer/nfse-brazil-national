@@ -1,6 +1,7 @@
 import assert from "node:assert";
 import { test, describe, mock } from "node:test";
 import { NfseNationalClient } from "../src/index.js";
+import { createNfseDefinition } from "../src/templates/nfse-template.js";
 
 // Simple mock for axios
 // Since axios is used internally, we could use dependency injection or
@@ -150,5 +151,18 @@ describe("NfseNationalClient Usage", () => {
                 throw err;
             }
         }
+    });
+
+    test("DANFSe template should format date and time for display", () => {
+        const definition = createNfseDefinition({
+            nNFSe: "123",
+            dhProc: "2026-07-01T17:10:10-03:00",
+            dpsEmissao: "2026-07-01T17:09:00-03:00",
+            chaveAcesso: "NFS123"
+        });
+
+        const rows = definition.content[3].table.body;
+        assert.strictEqual(rows[0][2].stack[1].text, "01/07/2026 - 17:10");
+        assert.strictEqual(rows[1][2].stack[1].text, "01/07/2026 - 17:09");
     });
 });
