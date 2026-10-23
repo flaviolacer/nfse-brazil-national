@@ -1,10 +1,14 @@
 {
   "name": "nfse-brazil-national",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Biblioteca cliente para integração com a API Nacional da NFS-e (Nota Fiscal de Serviço Eletrônica) do Brasil.",
   "type": "module",
   "main": "./src/index.js",
   "exports": "./src/index.js",
+  "files": [
+    "src",
+    "README.md"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
@@ -23,12 +27,12 @@
   },
   "public": true,
   "dependencies": {
-    "@xmldom/xmldom": "0.9.10",
-    "axios": "^1.18.1",
-    "handlebars": "4.7.9",
+    "@xmldom/xmldom": "0.9.12",
+    "axios": "1.20.0",
+    "handlebars": "4.7.10",
     "node-forge": "1.4.0",
     "pdfmake": "^0.2.10",
     "qrcode": "^1.5.4",
-    "xml-crypto": "^6.0.0"
+    "xml-crypto": "6.4.0"
   }
 }

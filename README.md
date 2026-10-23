@@ -34,17 +34,53 @@ npm install qrcode
 Importe a classe e instancie o cliente com as credenciais e o certificado digital.
 
 ```javascript
-import { NfseNationalClient } from "nfse-brazil-national";
+import {
+    NfseNationalClient,
+    NFSE_BASE_URLS
+} from "nfse-brazil-national";
 
 const client = new NfseNationalClient({
-    // URL do ambiente (Homologação ou Produção)
-    baseURL: "https://sefin.producaorestrita.nfse.gov.br/SefinNacional", 
+    // URL oficial do ambiente
+    baseURL: NFSE_BASE_URLS.production,
     // Caminho para o certificado PFX ou Buffer
     certificate: "./certificado.pfx",
     // Senha do certificado
     password: "sua-senha-aqui"
 });
 ```
+
+### Produção restrita com o leiaute de 20/10/2026
+
+O perfil padrão continua sendo o leiaute vigente em produção. Para testar o pacote publicado em
+produção restrita em 20/10/2026, selecione o perfil explicitamente:
+
+```javascript
+const client = new NfseNationalClient({
+    baseURL: NFSE_BASE_URLS.restricted,
+    layoutProfile: "restricted-2026-10-20",
+    certificate: "./certificado.pfx",
+    password: "sua-senha-aqui"
+});
+```
+
+Nesse perfil, `finalidadeNfse` assume `"0"` (NFS-e regular) quando omitida. O campo legado
+`valores.deducaoReducao` também é convertido para `vAjusteBC`; para código novo, prefira:
+
+```javascript
+valores: {
+    // ...
+    ajusteBaseCalculo: {
+        // Informe percentualIssqn ou valorIssqn, não ambos.
+        valorIssqn: "10.00"
+    }
+}
+```
+
+Fontes oficiais usadas pelo perfil:
+
+* [Documentação de produção](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/documentacao-atual)
+* [Documentação de produção restrita](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/producao-restrita)
+* [URLs oficiais das APIs](https://www.gov.br/nfse/pt-br/biblioteca/documentacao-tecnica/apis-prod-restrita-e-producao)
 
 ### Emissão de NFS-e (Envio de DPS)
 
@@ -124,6 +160,10 @@ const resultado = await client.cancelNfse(dadosCancelamento, chaveAcesso);
 *   `cancelNfse(cancelamentoData, chaveAcesso)`: Gera o XML do evento, assina e envia.
 *   `getNfse(chaveAcesso)`: Retorna os dados de uma NFS-e específica.
 *   `getDps(idDps)`: Consulta status de um DPS.
+*   `checkDps(idDps)`: Verifica via `HEAD` se a DPS já gerou uma NFS-e.
+*   `getEvents(chaveAcesso)`: Consulta todos os eventos da NFS-e.
+*   `getEventsByType(chaveAcesso, tipoEvento)`: Consulta eventos de um tipo.
+*   `getEvent(chaveAcesso, tipoEvento, numSeqEvento)`: Consulta um evento específico.
 *   `generateDpsXml(dpsData)`: Apenas gera o XML assinado (sem enviar).
 *   `validateDpsXml(xmlString)`: Valida XML contra o XSD.
 *   `generateNfsePdf(xmlString, options)`: Gera o PDF da NFS-e. Opções: `logo` (Base64), `gZipB64` (boolean).

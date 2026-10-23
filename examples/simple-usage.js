@@ -1,4 +1,4 @@
-import { NfseNationalClient } from "../src/index.js";
+import {NfseNationalClient, NFSE_BASE_URLS} from "../src/index.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -25,14 +25,14 @@ async function getNextSequence() {
 }
 
 async function main() {
-    const baseURL = "https://sefin.producaorestrita.nfse.gov.br/SefinNacional";
-    //const baseURL = "https://sefin.nfse.gov.br/SefinNacional";
+    const baseURL = NFSE_BASE_URLS.restricted;
 
     try {
         console.log(`Using certificate: ${CERTIFICATE_PATH}`);
 
         const client = new NfseNationalClient({
             baseURL: baseURL,
+            layoutProfile: "restricted-2026-10-20",
             certificate: CERTIFICATE_PATH,
             password: CERTIFICATE_PASSWORD
         });

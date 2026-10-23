@@ -15,15 +15,43 @@ import {DOMParser} from "@xmldom/xmldom";
 import PdfPrinter from "pdfmake";
 import {createNfseDefinition} from "./templates/nfse-template.js";
 
+export const NFSE_BASE_URLS = Object.freeze({
+    production: "https://sefin.nfse.gov.br/SefinNacional",
+    restricted: "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional"
+});
+
+export const NFSE_LAYOUT_PROFILES = Object.freeze({
+    production: Object.freeze({
+        xsdVersion: "1.01",
+        xsdDirectory: "1.01",
+        dpsTemplate: "dps.xml",
+        eventTemplate: "dps_cancelamento.xml"
+    }),
+    "restricted-2026-10-20": Object.freeze({
+        xsdVersion: "1.01",
+        xsdDirectory: "restricted-2026-10-20",
+        dpsTemplate: "dps_restricted_20261020.xml",
+        eventTemplate: "dps_cancelamento.xml"
+    })
+});
+
 const execAsync = promisify(exec);
 const gzipAsync = promisify(zlib.gzip);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class NfseNationalClient {
-    constructor({ baseURL, certificate, password, axiosConfig, xsdVersion } = {}) {
+    constructor({baseURL, certificate, password, axiosConfig, xsdVersion, layoutProfile = "production"} = {}) {
         if (!baseURL) {
             throw new Error("baseURL is required");
+        }
+
+        const profile = NFSE_LAYOUT_PROFILES[layoutProfile];
+        if (!profile) {
+            throw new Error(`Unknown layoutProfile: ${layoutProfile}`);
+        }
+        if (layoutProfile !== "production" && xsdVersion && xsdVersion !== profile.xsdVersion) {
+            throw new Error(`layoutProfile ${layoutProfile} requires XSD ${profile.xsdVersion}`);
         }
 
         this.baseURL = baseURL;
@@ -31,7 +59,13 @@ export class NfseNationalClient {
         this.password = password;
         this.axiosConfig = axiosConfig || {};
 
-        this.xsdVersion = xsdVersion || "1.01";
+        this.layoutProfile = layoutProfile;
+        this.xsdVersion = xsdVersion || profile.xsdVersion;
+        this.xsdDirectory = layoutProfile === "production" && xsdVersion
+            ? xsdVersion
+            : profile.xsdDirectory;
+        this.dpsTemplate = profile.dpsTemplate;
+        this.eventTemplate = profile.eventTemplate;
 
         this.http = null;
         this.certData = null;
@@ -40,7 +74,8 @@ export class NfseNationalClient {
     }
 
     async generateDpsXml(dpsData, options = {}) {
-        return this.#generateXml("dps.xml", dpsData, "//*[local-name(.)='infDPS']", dpsData.id, options);
+        const preparedData = this.#prepareDpsData(dpsData);
+        return this.#generateXml(this.dpsTemplate, preparedData, "//*[local-name(.)='infDPS']", preparedData.id, options);
     }
 
     async validateDpsXml(xmlString, suppressErrors = false) {
@@ -104,7 +139,7 @@ export class NfseNationalClient {
     }
 
     async generateCancellationXml(cancelamentoData, options = {}) {
-        return this.#generateXml("dps_cancelamento.xml", cancelamentoData, "//*[local-name(.)='infPedReg']", cancelamentoData.id, options);
+        return this.#generateXml(this.eventTemplate, cancelamentoData, "//*[local-name(.)='infPedReg']", cancelamentoData.id, options);
     }
 
     async cancelNfse(cancelamentoData, chaveAcesso) {
@@ -124,6 +159,23 @@ export class NfseNationalClient {
 
         const url = `nfse/${encodeURIComponent(chave)}/eventos`;
         return this.#sendCompressedXml(url, xmlPayload, "pedidoRegistroEventoXmlGZipB64", "Failed to cancel NFS-e");
+    }
+
+    async getEvents(chaveAcesso) {
+        return this.#getEventResource(chaveAcesso);
+    }
+
+    async getEventsByType(chaveAcesso, tipoEvento) {
+        if (!tipoEvento) throw new Error("tipoEvento is required");
+        return this.#getEventResource(chaveAcesso, tipoEvento);
+    }
+
+    async getEvent(chaveAcesso, tipoEvento, numSeqEvento) {
+        if (!tipoEvento) throw new Error("tipoEvento is required");
+        if (numSeqEvento === undefined || numSeqEvento === null || numSeqEvento === "") {
+            throw new Error("numSeqEvento is required");
+        }
+        return this.#getEventResource(chaveAcesso, tipoEvento, numSeqEvento);
     }
 
     async generateNfsePdf(xmlString, options = {}) {
@@ -264,10 +316,15 @@ export class NfseNationalClient {
     static generateDpsId(municipioEmitente, tipoInscricaoFederal, inscricaoFederal, serie, numero) {
         const seriePad = serie.toString().padStart(5, '0');
         const numeroPad = numero.toString().padStart(15, '0');
-        // Remove caracteres não numéricos da inscrição federal (CNPJ/CPF)
-        const inscricaoLimpa = inscricaoFederal.replace(/\D/g, '');
+        const tipo = tipoInscricaoFederal.toString();
+        let inscricaoLimpa = inscricaoFederal.toString().toUpperCase().replace(/[^0-9A-Z]/g, '');
+
+        // O CPF ocupa as mesmas 14 posições do CNPJ no identificador da DPS.
+        if (tipo === "1") {
+            inscricaoLimpa = inscricaoLimpa.padStart(14, "0");
+        }
         
-        return `DPS${municipioEmitente}${tipoInscricaoFederal}${inscricaoLimpa}${seriePad}${numeroPad}`;
+        return `DPS${municipioEmitente}${tipo}${inscricaoLimpa}${seriePad}${numeroPad}`;
     }
 
     /**
@@ -303,6 +360,41 @@ export class NfseNationalClient {
     }
 
     // --- Private Methods ---
+
+    #prepareDpsData(data) {
+        if (!data || this.layoutProfile !== "restricted-2026-10-20") return data;
+
+        const valores = {...(data.valores || {})};
+        if (!valores.ajusteBaseCalculo && valores.deducaoReducao) {
+            valores.ajusteBaseCalculo = {
+                percentualIssqn: valores.deducaoReducao.percentual,
+                valorIssqn: valores.deducaoReducao.valor
+            };
+        }
+
+        return {
+            ...data,
+            finalidadeNfse: data.finalidadeNfse ?? "0",
+            valores
+        };
+    }
+
+    async #getEventResource(chaveAcesso, tipoEvento, numSeqEvento) {
+        await this.#ensureInitialized();
+        if (!chaveAcesso) throw new Error("chaveAcesso is required");
+
+        const segments = ["nfse", chaveAcesso, "eventos"];
+        if (tipoEvento !== undefined) segments.push(tipoEvento);
+        if (numSeqEvento !== undefined) segments.push(numSeqEvento);
+        const url = segments.map((segment) => encodeURIComponent(String(segment))).join("/");
+
+        try {
+            const response = await this.http.get(url);
+            return response.data;
+        } catch (err) {
+            throw this.#toNfseError(err, "Failed to query NFS-e events");
+        }
+    }
 
     async #ensureInitialized() {
         if (this.http) return;
@@ -417,7 +509,7 @@ export class NfseNationalClient {
     }
 
     async #validateXml(xmlString, xsdFilename, tempPrefix, suppressErrors = false) {
-        const xsdPath = path.join(__dirname, "templates", "xsd", this.xsdVersion, xsdFilename);
+        const xsdPath = path.join(__dirname, "templates", "xsd", this.xsdDirectory, xsdFilename);
         const tempXmlPath = path.join(tmpdir(), `${tempPrefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.xml`);
 
         try {
